@@ -1,0 +1,153 @@
+﻿@using HardwareShopContracts.ViewModels
+@{
+	ViewData["Title"] = "CreatePurchase";
+	Layout = "~/Views/Shared/_LayoutWorker.cshtml";
+}
+
+<div class="text-center">
+	<h2 class="display-4">Создание покупки</h2>
+</div>
+
+<div class="d-flex flex-column align-items-center">
+	<div class="col-sm-3">
+		<label class="form-label">Цена</label>
+		<input type="number" step="0.01" class="form-control" name="sum" id="sum" readonly min="0.01" value="0" required>
+	</div>
+	<h1 class="display-6">Товары</h1>
+	<div class="d-flex justify-content-center">
+		<button type="button" class="btn btn-primary mx-2 mt-3" data-bs-toggle="modal" data-bs-target="#exampleModal">Добавить</button>
+	</div>
+	<table class="table table-hover">
+		<thead>
+			<tr>
+				<th scope="col">Товар</th>
+				<th scope="col">Цена</th>
+				<th scope="col">Количество</th>
+				<th scope="col">Сумма</th>
+				<th scope="col">Действие</th>
+			</tr>
+		</thead>
+		<tbody id="result">
+		</tbody>
+	</table>
+	<div class="col-sm-2 d-flex justify-content-evenly align-items-baseline">
+		<button type="button" class="btn btn-primary mt-3 px-4" id="createpurchase">Сохранить</button>
+	</div>
+</div>
+
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="exampleModalLabel">Товар</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+			</div>
+			<div class="modal-body">
+				<label class="form-label">Товар</label>
+				<select id="good" name="good" class="form-control" asp-items="@(new SelectList(@ViewBag.Goods, "Id", "GoodName"))"></select>
+				<label class="form-label">Количество</label>
+				<input type="number" class="form-control" name="count" id="count" min="1" value="1" required>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+				<button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="savegood">Сохранить</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+@section Scripts
+	{
+	<script>
+		let list = [];
+		const submitGoodBtn = document.getElementById("savegood");
+		//const editBtn = document.getElementById("editcomponent");
+		const saveBtn = document.getElementById("createpurchase");
+		const countElem = document.getElementById("count");
+		const resultTable = document.getElementById("result");
+		const totalSum = document.getElementById("sum");
+
+		submitGoodBtn.addEventListener("click", () => {
+			console.log('try to add good')
+			var count = $('#count').val();
+			var good = $('#good').val();
+			if (count > 0 && good > 0){
+			$.ajax({
+				method: "GET",
+				url: `/Home/GetGood`,
+				data: { Id: good },
+				success: function (result) {
+					let flag = false
+					if (list.length > 0) {
+						list.forEach((elem) => {
+							if (elem.good.id === parseInt(result.id)) {
+								console.log('good already added')
+								flag = true
+							}
+						})
+					}
+					if (!flag) list.push({ good: result, count: count })
+					reloadTable()
+					countElem.value = '1'
+				}
+			});
+			}
+		})
+
+		saveBtn.addEventListener("click", () => {
+			console.log('try to add purchase')
+			console.log(list)
+			if (list.length == 0) {
+				alert('failed add good. components are empty')
+				return
+			}
+			let goods = []
+			let counts = []
+			list.forEach((x) => {
+				goods.push(x.good);
+				counts.push(parseInt(x.count))
+			})
+			console.log(JSON.stringify({
+				"Sum": parseFloat(totalSum.value),
+				"ListPurchaseGoods": goods, "PurchaseGoodsCounts": counts
+			}));
+			$.ajax(
+				{
+					url: `/Home/CreatePurchase`,
+					type: 'POST',
+					contentType: 'application/json',
+					data: JSON.stringify({
+						"Sum": parseFloat(totalSum.value),
+						"ListPurchaseGoods": goods, "PurchaseGoodsCounts": counts
+					})
+				}
+			).done(() => window.location.href = '/Home/Purchases')
+		})
+
+		function reloadTable() {
+			resultTable.innerHTML = ''
+			let price = 0;
+			let count = 0;
+			list.forEach((elem) => {
+				console.log(elem);
+				resultTable.innerHTML += `<tr><td>${elem.good.goodName}</td><td>${elem.good.price}</td><td>${elem.count}</td><td>${Math.round(elem.good.price * elem.count * 100) / 100}</td><td> \
+							<div> \
+								<button onclick="deleteGood(${count})" type="button" class="btn btn-danger"> \
+									<i class="fa fa-trash" aria-hidden="true"></i> \
+								</button> \
+								</div><td/></tr>`
+				count++;
+				console.log(elem);
+				price += elem.good.price * elem.count
+			})
+			totalSum.value = Math.round(price * 110) / 100
+			console.log(totalSum.value);
+		}
+
+		function deleteGood(id) {
+			list = list.filter(value => value.good.goodName != resultTable.rows[id].cells[0].innerText)
+			reloadTable()
+		}
+
+	</script>
+}

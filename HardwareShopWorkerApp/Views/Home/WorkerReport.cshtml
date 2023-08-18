@@ -1,0 +1,140 @@
+﻿@{
+    ViewData["Title"] = "WorkerReport";
+    Layout = "~/Views/Shared/_LayoutWorker.cshtml";
+}
+
+<div class="d-flex flex-column align-items-center">
+    <div class="col-sm-3">
+        <label class="form-label">С</label>
+        <input type="date" class="form-control" name="dateFrom" id="date-from-input">
+        <label class="form-label">По</label>
+        <input type="date" class="form-control" name="dateTo" id="date-to-input">
+    </div>
+    <button type="submit" class="btn btn-primary mt-3 px-4" id="generate-button">Вывод на страницу</button>
+    <button type="submit" class="btn btn-primary mt-3 px-4" id="send-by-mail-button">Отправить на почту</button>
+</div>
+
+<p class="mb-0">
+    <span>За период с&nbsp;</span>
+    <span id="date-from-span" class="fw-bold">...</span>
+    <span>&nbsp;по&nbsp;</span>
+    <span id="date-to-span" class="fw-bold">...</span>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">Номер покупки</th>
+            <th scope="col">Дата покупки</th>
+            <th scope="col">Сумма покупки</th>
+            <th scope="col">Комментарии</th>
+            <th scope="col">Комплектующие</th>
+        </tr>
+    </thead>
+    <tbody id="tbody">
+    </tbody>
+</table>
+
+@section Scripts
+    {
+    <script>
+        const generateButton = document.getElementById("generate-button");
+        const sendByMailButton = document.getElementById("send-by-mail-button");
+        const dateFromInput = document.getElementById("date-from-input");
+        const dateToInput = document.getElementById("date-to-input");
+        const dateFromSpan = document.getElementById("date-from-span");
+        const dateToSpan = document.getElementById("date-to-span");
+        const tbody = document.getElementById("tbody");
+        const errorP = document.getElementById("error-p");
+        const errorDivShell = document.getElementById("error-div-shell");
+
+        generateButton.addEventListener("click", () => {
+            const dateFrom = new Date(dateFromInput.value);
+            const dateTo = new Date(dateToInput.value);
+            const reportModel = {
+                "DateFrom": dateFrom,
+                "DateTo": dateTo
+            };
+            $.ajax({
+                url: "/home/WorkerReport",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(reportModel)
+            }).done((reportData) => {
+                dateFromSpan.innerHTML = reportModel["DateFrom"].toLocaleDateString();
+                dateToSpan.innerHTML = reportModel["DateTo"].toLocaleDateString();
+                renderTable(reportData);
+            });
+        });
+
+        sendByMailButton.addEventListener("click", () => {
+            const dateFrom = new Date(dateFromInput.value);
+            const dateTo = new Date(dateToInput.value);
+            const reportModel = {
+                "DateFrom": dateFrom,
+                "DateTo": dateTo
+            };
+            $.ajax({
+                url: "/home/SendByMailPurchaseReport",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(reportModel)
+            }).done(() => {
+            });
+        });
+
+        const renderTable = function (reportData) {
+            tbody.innerHTML = "";
+            reportData.forEach((record) => {
+                console.log(record);
+                const comments = record.comments;
+                const components = record.components;
+                const recordHeight = Math.max(comments.length + 1, components.length + 1);
+                for (let i = 0; i < recordHeight; i++) {
+                    let cellsData = ["", "", "", "", ""];
+                    if (i === 0) {
+                        cellsData[0] = record.id;
+                        cellsData[1] = getDate(record.purchaseDate);
+                        cellsData[2] = record.purchaseSum;
+                        createTableRow(cellsData);
+                        continue;
+                    }
+                    let k = i - 1;
+                    if (k < comments.length) {
+                        cellsData[3] = comments[k];
+                    }
+                    if (k < components.length) {
+                        cellsData[4] = components[k];
+                    }
+                    createTableRow(cellsData);
+                }
+            });
+        }
+
+        const createTableRow = function (cellsData) {
+            const tr = document.createElement('tr');
+            tr.classList.add("table-row");
+            tr.appendChild(createTableCell(cellsData[0])); // Purchase
+            tr.appendChild(createTableCell(cellsData[1])); // DatePurchase
+            tr.appendChild(createTableCell(cellsData[2])); // purchaseSum
+            tr.appendChild(createTableCell(cellsData[3])); // Comments
+            tr.appendChild(createTableCell(cellsData[4])); // Copmponent
+            tbody.appendChild(tr);
+        }
+
+        const createTableCell = function (cellText) {
+            const td = document.createElement('td');
+            td.innerHTML = cellText;
+            return td;
+        }
+
+        const getDate = function (iso) {
+            const year = iso.substring(0, 4);
+            const month = iso.substring(5, 7);
+            const day = iso.substring(8, 10);
+            const date = `${day}.${month}.${year}`;
+            return date;
+        }
+
+    </script>
+}

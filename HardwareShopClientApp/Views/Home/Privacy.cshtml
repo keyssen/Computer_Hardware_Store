@@ -1,0 +1,29 @@
+﻿@using HardwareShopContracts.ViewModels;
+
+
+@model UserViewModel
+
+@{
+	ViewData["Title"] = "Privacy Policy";
+	Layout = "~/Views/Shared/_LayoutStorekeeper.cshtml";
+}
+<div class="text-center">
+	<h2 class="display-4">Личные данные</h2>
+</div>
+<form method="post" class="d-flex flex-column align-items-center">
+	<div class="col-sm-3">
+		<label class="form-label">Почта:</label>
+		<input type="text" class="form-control" name="email" value="@Model.Email">
+	</div>
+	<div class="col-sm-3">
+		<label class="form-label">Пароль:</label>
+		<input type="text" class="form-control" name="password" value="@Model.Password">
+	</div>
+	<div class="col-sm-3">
+		<label class="form-label">Логин:</label>
+		<input type="text" class="form-control" name="login" value="@Model.Login">
+	</div>
+	<div class="col-sm-2 d-flex justify-content-evenly align-items-baseline">
+		<button type="submit" class="btn btn-primary mt-3 px-4">Подтвердить</button>
+	</div>
+</form>

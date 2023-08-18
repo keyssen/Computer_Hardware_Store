@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DocumentFormat.OpenXml" Version="2.20.0" />
+    <PackageReference Include="MailKit" Version="4.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
+    <PackageReference Include="PdfSharp.MigraDoc.Standard" Version="1.51.15" />
+    <PackageReference Include="System.Text.Encoding" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\HardwareShopContracts\HardwareShopContracts.csproj" />
+    <ProjectReference Include="..\HardwareShopDatabaseImplement\HardwareShopDatabaseImplement.csproj" />
+    <ProjectReference Include="..\HardwareShopDataModels\HardwareShopDataModels.csproj" />
+  </ItemGroup>
+
+</Project>

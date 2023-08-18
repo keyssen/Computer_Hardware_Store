@@ -1,0 +1,72 @@
+﻿@using HardwareShopContracts.ViewModels
+
+@model List<GoodViewModel>
+
+@{
+    ViewData["Title"] = "Товары";
+    Layout = "~/Views/Shared/_LayoutStorekeeper.cshtml";
+}
+
+<div class="text-center">
+	<h1 class="display-4">Товары</h1>
+</div>
+
+<div class="text-center">
+	<p>
+		<a asp-action="CreateGood" class="btn btn-primary mx-2">Создать товар</a>
+	</p>
+	<table class="table">
+		<thead>
+			<tr>
+				<th>
+					Название
+				</th>
+				<th>
+					Цена
+				</th>
+				<th>
+					Действия
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (var item in Model)
+			{
+				<tr>
+					<td>
+						@Html.DisplayFor(modelItem => item.GoodName)
+					</td>
+					<td>
+						@Html.DisplayFor(modelItem => item.Price)
+					</td>
+					<td>
+						<div>
+							<a asp-controller="Storekeeper"
+								asp-action="UpdateGood"
+								asp-route-goodid="@item.Id"
+								class="btn btn-primary">
+								<i class="fa fa-pencil" aria-hidden="true"></i>
+							</a>
+							<button onclick="deleteGood(@item.Id)" type="button" class="btn btn-danger">
+								<i class="fa fa-trash" aria-hidden="true"></i>
+							</button>
+						</div>
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+</div>
+
+@section Scripts
+{
+	<script>
+		function deleteGood(goodId) {
+			$.ajax({
+				method: "POST",
+				url: "/Storekeeper/DeleteGood",
+				data: { good: goodId }
+			}).done(() => window.location.href = "/Storekeeper/Goods");
+		}
+	</script>
+}

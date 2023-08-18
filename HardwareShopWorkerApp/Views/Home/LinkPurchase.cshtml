@@ -1,0 +1,180 @@
+﻿@using HardwareShopContracts.ViewModels;
+
+@model List<Tuple<PurchaseViewModel, int>>
+@{
+	ViewData["Title"] = "Link purchase";
+	Layout = "~/Views/Shared/_LayoutWorker.cshtml";
+}
+
+<div class="text-center">
+	<h1 class="display-4">Привязка сборок</h1>
+</div>
+
+<div class="text-center">
+	@{
+		<p>
+			<button type="button" onclick="getBuild()" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">Добавить</button>
+		</p>
+		<table class="table">
+			<thead>
+				<tr>
+					<th>
+						Идентификатор покупки
+					</th>
+					<th>
+						Цена
+					</th>
+					<th>
+						Статус
+					</th>
+					<th>
+						Количество сборок в заказе
+					</th>
+					<th>
+						Действия
+					</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var item in Model)
+				{
+					<tr>
+						<td>
+							@Html.DisplayFor(modelItem => item.Item1.Id)
+						</td>
+						<td>
+							@Html.DisplayFor(modelItem => item.Item1.Sum)
+						</td>
+						<td>
+							@Html.DisplayFor(modelItem => item.Item1.PurchaseStatus)
+						</td>
+						<td>
+							@Html.DisplayFor(modelItem => item.Item2)
+						</td>
+						<td>
+							<div>
+								<button onclick="getPurchase(@item.Item1.Id)" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateModal">
+									<i class="fa fa-pencil" aria-hidden="true"></i>
+								</button>
+								<button onclick="getPurchase(@item.Item1.Id)" type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
+									<i class="fa fa-trash" aria-hidden="true"></i>
+								</button>
+
+							</div>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+</div>
+
+<div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<form method="get" asp-controller="home" asp-action="LinkBuildPurchase">
+				<div class="modal-header">
+					<h5 class="modal-title" id="exampleModalLabel">Привязка покупки</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+				</div>
+				<div class="modal-body">
+					<label class="form-label">Покупка</label>
+					<select id="purchaseId" name="purchaseId" class="form-control" asp-items="@(new SelectList(@ViewBag.Purchases, "Id","Id"))"></select>
+					<div class="form-group">
+						<label>Количество</label>
+						<input type="number" class="form-control" required="required" name="count" />
+					</div>
+				</div>
+				<input type="hidden" id="buildId" name="buildId" />
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+					<input type="submit" class="btn btn-primary" value="Сохранить">
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<form method="get" asp-controller="home" asp-action="DeleteLinkPurchase">
+				<div class="modal-header">
+					<h5 class="modal-title" id="exampleModalLabel">Удаление покупки</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+				</div>
+				<div class="modal-body">
+					<div class="form-group">
+						<h1>Вы уверенны что хотите удалить сборку?</h1>
+					</div>
+				</div>
+				<input type="hidden" id="deleteBuildId" name="deleteBuildId" />
+				<input type="hidden" id="deletePurchaseId" name="deletePurchaseId" />
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+					<input type="submit" class="btn btn-primary" value="Удалить">
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+<div class="modal fade" id="updateModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<form method="get" asp-controller="home" asp-action="LinkBuildPurchase">
+				<div class="modal-header">
+					<h5 class="modal-title" id="exampleModalLabel">Привязка покупки</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+				</div>
+				<div class="modal-body">
+					<div class="form-group">
+						<label>Количество</label>
+						<input type="number" class="form-control" required="required" name="count" />
+					</div>
+				</div>
+				<input type="hidden" id="updateBuildId" name="buildId" />
+				<input type="hidden" id="updatePurchaseId" name="purchaseId" />
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+					<input type="submit" class="btn btn-primary" value="Сохранить">
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+@section Scripts
+{
+	<script>
+		function getBuild() {
+			let currentUrl = window.location.href;
+			console.log(currentUrl);
+			getURLParameter(currentUrl, 'buildId');
+			let buildId = getURLParameter(currentUrl, 'buildId');
+			console.log(buildId);
+			$('#buildId').val(buildId);
+			$('#deleteBuildId').val(buildId);
+			$('#updateBuildId').val(buildId);
+			var id = document.getElementById("updateBuildId");
+			console.log(id.value);
+		}
+
+		function getURLParameter(sUrl, sParam) {
+			let sPageURL = sUrl.substring(sUrl.indexOf('?') + 1);
+			let sURLVariables = sPageURL.split('&');
+			for (let i = 0; i < sURLVariables.length; i++) {
+				let sParameterName = sURLVariables[i].split('=');
+				if (sParameterName[0] == sParam) {
+					return sParameterName[1];
+				}
+			}
+		}
+		function getPurchase(purchaseId) {
+			getBuild();
+			$('#deletePurchaseId').val(purchaseId);
+			$('#updatePurchaseId').val(purchaseId);
+			console.log(purchaseId);
+		}
+	</script>
+}

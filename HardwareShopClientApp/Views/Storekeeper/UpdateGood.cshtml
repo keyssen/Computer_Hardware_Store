@@ -1,0 +1,181 @@
+﻿@using HardwareShopContracts.ViewModels
+
+@model int
+
+@{
+    ViewData["Title"] = "Товар";
+    Layout = "~/Views/Shared/_LayoutStorekeeper.cshtml";
+}
+
+<div class="text-center">
+	<h2 class="display-4">Редактирование товара</h2>
+</div>
+
+<div class="d-flex flex-column align-items-center">
+	<div class="col-sm-3">
+		<label class="form-label">Название</label>
+		<input type="text" class="form-control" name="name" id="name" required>
+	</div>
+	<div class="col-sm-3">
+		<label class="form-label">Цена</label>
+		<input type="number" step="0.01" class="form-control" name="price" id="price" readonly min="0.01" value="0" required>
+	</div>
+	<h1 class="display-6">Комплектующие</h1>
+	<div class="d-flex justify-content-center">
+		<button type="button" class="btn btn-primary mx-2 mt-3" data-bs-toggle="modal" data-bs-target="#exampleModal">Добавить</button>
+	</div>
+	<table class="table table-hover">
+		<thead>
+			<tr>
+				<th scope="col">Комплектующее</th>
+				<th scope="col">Стоимость</th>
+				<th scope="col">Количество</th>
+				<th scope="col">Сумма</th>
+				<th scope="col">Действие</th>
+			</tr>
+		</thead>
+		<tbody id="result">
+		</tbody>
+	</table>
+	<div class="col-sm-2 d-flex justify-content-evenly align-items-baseline">
+		<button type="button" class="btn btn-primary mt-3 px-4" id="editgood">Сохранить</button>
+	</div>
+</div>
+
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="exampleModalLabel">Комплектующее</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+			</div>
+			<div class="modal-body">
+				<label class="form-label">Комплектующее</label>
+				<select id="component" name="component" class="form-control" asp-items="@(new SelectList(@ViewBag.Components, "Id", "ComponentName"))"></select>
+				<label class="form-label">Количество</label>
+				<input type="number" class="form-control" name="count" id="count" min="1" value="1" required>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+				<button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="savecomponent">Сохранить</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+@section Scripts 
+{
+    <script>
+		const goodid = @Model
+		// components & counts
+		let list = [];
+		const name = document.getElementById("name");
+		const submitComponentBtn = document.getElementById("savecomponent");
+		const saveBtn = document.getElementById("editgood");
+		const countElem = document.getElementById("count");
+		const resultTable = document.getElementById("result");
+		const totalPrice = document.getElementById("price");
+
+		submitComponentBtn.addEventListener("click", () => {
+			console.log('try to add component')
+			var count = $('#count').val();
+			var component = $('#component').val();
+			if (component && count && count > 0)
+				$.ajax({
+					method: "GET",
+					url: `/Storekeeper/GetComponent`,
+					data: { Id: component },
+					success: function (result) {
+						let flag = false
+						if (list.length > 0) {
+							list.forEach((elem) => {
+								if (elem.component.id === parseInt(result.id)) {
+									console.log('component already added')
+									flag = true
+								}
+							})
+						}
+						if (!flag) list.push({ component: result, count: count })
+						reloadTable()
+						countElem.value = '1'
+					}
+				}).fail(function(xhr, textStatus, errorThrown) {
+					alert(xhr.responseText);
+				});
+		})
+
+		saveBtn.addEventListener("click", () => {
+			console.log('try to update good')
+			if (list.length == 0) {
+				console.log('failed update good')
+				return
+			}
+			let components = []
+			let counts = []
+			list.forEach((x) => { 
+				components.push(x.component); 
+				counts.push(parseInt(x.count)) 
+			})
+			$.ajax(
+				{
+					url: `/Storekeeper/UpdateGood`,
+					type: 'POST',
+					contentType: 'application/json',
+					data: JSON.stringify({ "Id": goodid, "GoodName": name.value,"Price": parseFloat(totalPrice.value), 
+						"GoodComponentsComponents": components, "GoodComponentsCounts": counts })
+				}
+			).done(() => window.location.href = '/Storekeeper/Goods')
+			.fail(function(xhr, textStatus, errorThrown) {
+				alert(xhr.responseText);
+			})
+		})
+
+		function reloadTable() {
+			resultTable.innerHTML = ''
+			let price = 0;
+			let count = 0;
+			list.forEach((elem) => {
+				resultTable.innerHTML += `<tr><td>${elem.component.componentName}</td><td>${elem.component.cost}</td><td>${elem.count}</td><td>${Math.round(elem.component.cost * elem.count * 100) / 100}</td><td> \
+					<div> \
+						<button onclick="deleteComponent(${count})" type="button" class="btn btn-danger"> \
+							<i class="fa fa-trash" aria-hidden="true"></i> \
+						</button> \
+						</div><td/></tr>`
+				count++;
+				price += elem.component.cost * elem.count
+			})
+			totalPrice.value = Math.round(price * 100) / 100
+		}
+
+		function deleteComponent(id) {
+			list = list.filter(value => value.component.componentName != resultTable.rows[id].cells[0].innerText)
+			reloadTable()
+		}
+
+		function getGood() {
+			if (goodid) {
+				$.ajax({
+					method: "GET",
+					url: "/Storekeeper/GetGoodUpdate",
+					data: { goodid: goodid },
+					success: function (result) {
+						if (result) {
+							name.value = result.item1.goodName
+							totalPrice.value = result.item1.price
+							result.item2.forEach(elem => {
+								list.push({ component: elem.item1, count: elem.item2 })
+							})
+							reloadTable()
+						}
+						else 
+							alert("Ошибка получения товара")
+					}
+				})
+				.fail(function(xhr, textStatus, errorThrown) {
+					alert(xhr.responseText);
+				})
+			};
+		}
+		getGood();
+    </script>
+}

@@ -1,0 +1,94 @@
+﻿@using HardwareShopContracts.ViewModels
+@{
+    ViewData["Title"] = "Отчет";
+    Layout = "~/Views/Shared/_LayoutStorekeeper.cshtml";
+}
+
+<div class="d-flex flex-column align-items-center">
+	<div class="col-sm-3">
+		<label class="form-label">С</label>
+		<input type="date" class="form-control" name="dateFrom" id="dateFrom">
+		<label class="form-label">По</label>
+		<input type="date" class="form-control" name="dateTo" id="dateTo">
+	</div>
+	<button type="submit" class="btn btn-primary mt-3 px-4" id="page">Вывод на страницу</button>
+	<button type="submit" class="btn btn-primary mt-3 px-4" id="mail">Отправить на почту</button>
+</div>
+
+<table class="table">
+	<thead>
+		<tr>
+			<th scope="col">Комплектующее</th>
+			<th scope="col">Товар/Сборка</th>
+			<th scope="col">Количество</th>
+		</tr>
+	</thead>
+	<tbody id="result">
+	</tbody>
+</table>
+
+@section Scripts
+{
+	<script>
+		let list = []
+		const from = document.getElementById("dateFrom");
+		const to = document.getElementById("dateTo");
+		const onpage = document.getElementById("page");
+		const onmail = document.getElementById("mail");
+		const resultTable = document.getElementById("result");
+
+		onpage.addEventListener("click", () => {
+				console.log('try to get report')
+				if (from.value && to.value && from.value !== '' && to.value !== '') {
+					const dateFrom = new Date(from.value);
+					const dateTo = new Date(to.value);
+					if (dateFrom.getTime() > dateTo.getTime())
+						alert("Неправильные даты")
+					const reportModel = { "DateFrom": dateFrom, "DateTo": dateTo }
+					$.ajax({
+						method: "POST",
+						contentType: "application/json",
+						url: `/Storekeeper/Report`,
+						data: JSON.stringify(reportModel),
+						success: function (result) {
+							list = result
+							console.log(list)
+							reloadTable()
+						}
+					}).fail(function(xhr, textStatus, errorThrown) {
+						alert(xhr.responseText);
+					})
+				} else { alert("Пустые поля") }
+		})
+		onmail.addEventListener("click", () => {
+			console.log('try to send email')
+			if (from.value && to.value && from.value !== '' && to.value !== '') {
+				const dateFrom = new Date(from.value);
+				const dateTo = new Date(to.value);
+				if (dateFrom.getTime() > dateTo.getTime())
+					alert("Неправильные даты")
+				const reportModel = { "DateFrom": dateFrom, "DateTo": dateTo }
+				$.ajax({
+					method: "POST",
+					contentType: "application/json",
+					url: `/Storekeeper/ReportSendOnMail`,
+					data: JSON.stringify(reportModel)
+				}).fail(function(xhr, textStatus, errorThrown) {
+					alert(xhr.responseText);
+				})
+			} else { alert("Пустые поля") }
+		})
+
+		function reloadTable() {
+			resultString = '';
+			list.forEach((elem) => {
+				resultString += `<tr><td>${elem.componentName}</td><td></td><td></td></tr>`;
+				elem.goodOrBuilds.forEach((goodOrBuild) => {
+					resultString += `<tr><td></td><td>${goodOrBuild.item1}</td><td>${goodOrBuild.item2}</td></tr>`;
+				})
+				resultString += `<tr><td>Итого</td><td></td><td>${elem.totalCount}</td></tr>`;
+			})
+			resultTable.innerHTML = resultString
+		}
+	</script>
+}

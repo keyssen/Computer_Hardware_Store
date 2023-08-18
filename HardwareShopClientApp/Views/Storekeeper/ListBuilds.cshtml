@@ -1,0 +1,152 @@
+﻿@using HardwareShopContracts.ViewModels
+@{
+    ViewData["Title"] = "Получение списка";
+    Layout = "~/Views/Shared/_LayoutStorekeeper.cshtml";
+}
+
+<div class="text-center">
+	<h1 class="display-4">Получение списка сборок</h1>
+</div>
+
+<div class="d-flex flex-column align-items-center">
+	<h1 class="display-6">Выбранные товары</h1>
+	<div class="d-flex justify-content-center">
+		<button type="button" class="btn btn-primary mx-2 mt-3" data-bs-toggle="modal" data-bs-target="#exampleModal">Добавить товар</button>
+	</div>
+	<table class="table">
+		<thead>
+			<tr>
+				<th scope="col">Товар</th>
+				<th scope="col">Действия</th>
+			</tr>
+		</thead>
+		<tbody id="result">
+		</tbody>
+	</table>
+	<div class="col d-flex justify-content-evenly align-items-baseline">
+		<button type="button" class="btn btn-primary   m-2" id="savedoc">Сохранить в doc-формате</button>
+		<button type="button" class="btn btn-primary   m-2" id="saveexcel">Сохранить в xls-формате</button>
+	</div>
+</div>
+
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="exampleModalLabel">Товар</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+			</div>
+			<div class="modal-body">
+				<label class="form-label">Товар</label>
+				<select id="good" name="good" class="form-control" asp-items="@(new SelectList(@ViewBag.Goods, "Id", "GoodName"))"></select>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+				<button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="savegood">Сохранить</button>
+			</div>
+		</div>
+	</div>
+</div>
+@section Scripts
+{
+	<script>
+		let list = [];
+		const submitGoodBtn = document.getElementById("savegood");
+		const resultTable = document.getElementById("result");
+		const saveDocBtn = document.getElementById("savedoc");
+		const saveExcelBtn = document.getElementById("saveexcel");
+
+		submitGoodBtn.addEventListener("click", () => {
+			console.log('try to add good')
+			var good = $('#good').val();
+			if (good)
+				$.ajax({
+					method: "GET",
+					url: `/Storekeeper/GetGood`,
+					data: { Id: good },
+					success: function (result) {
+						let flag = false
+						if (list.length > 0) {
+							list.forEach((elem) => {
+									if (elem.id === parseInt(result.id)) {
+										console.log('good already added')
+									flag = true
+								}
+							})
+						}
+						if (!flag) list.push(result)
+						reloadTable()
+					}
+				}).fail(function(xhr, textStatus, errorThrown) {
+					alert(xhr.responseText);
+				})
+		})
+
+		saveDocBtn.addEventListener("click", async () => {
+			send('docx')
+		})
+
+		saveExcelBtn.addEventListener("click", async () => {
+			send('xlsx')
+		})
+
+		function send(format) {
+			console.log(`try to save in ${format} format`)
+			if (list.length == 0) {
+				alert('operation failed. goods are empty')
+				return
+			}
+			$.ajax({
+					url: `/Storekeeper/ListBuilds?format=${format}`,
+					type: 'POST',
+					contentType: 'application/json',
+					data: JSON.stringify({ "Goods" : list })
+				}).done((file) => {
+					let byteArray = new Uint8Array(file);
+					saveFile(byteArray, format);
+				})
+				.fail(function(xhr, textStatus, errorThrown) {
+					alert(xhr.responseText);
+				})
+		}
+
+		async function saveFile(bytes, format) {
+			if (window.showSaveFilePicker) {
+				const opts = {
+					suggestedName: `listbuilds.${format}`,
+					types: [{
+						description: `${format} file`,
+						accept: 
+						{ 
+							[`text/${format}`]: [`.${format}`]
+						},
+					}],
+				};
+				const handle = await showSaveFilePicker(opts);
+				const writable = await handle.createWritable();
+				await writable.write(bytes);
+				writable.close();
+				alert('done')
+			}
+		}
+
+		function reloadTable() {
+			resultTable.innerHTML = ''
+			let count = 0;
+			list.forEach((elem) => {
+				resultTable.innerHTML += `<tr><td>${elem.goodName}</td><td> \
+					<div> \
+						<button onclick="deleteGood(${count})" type="button" class="btn btn-danger"> \
+							<i class="fa fa-trash" aria-hidden="true"></i> \
+						</button> \
+						</div></td></tr>`
+				count++;
+			})
+		}
+
+		function deleteGood(id) {
+			list = list.filter(value => value.goodName != resultTable.rows[id].cells[0].innerText)
+			reloadTable()
+		}
+	</script>
+}

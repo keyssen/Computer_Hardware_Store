@@ -1,0 +1,125 @@
+﻿@using HardwareShopContracts.ViewModels
+@model List<PurchaseViewModel>
+@{
+    ViewData["Title"] = "Purchases";
+	Layout = "~/Views/Shared/_LayoutWorker.cshtml";
+}
+
+<div method="post"  class="d-flex justify-content-evenly">
+			@{
+		if (Model == null)
+		{
+			<h3 class="display-4">Введите пароль</h3>
+			return;
+		}
+	<div class="col-sm-8">
+		<div class="text-center">
+			<h2 class="display-4">Покупки</h2>
+			<p>
+				<a asp-controller="Home" asp-action="CreatePurchase" class="btn btn-primary mx-2">Добавить</a>
+				<button type="button" class="btn btn-primary mx-2" id="update">Изменить</button>
+				<button type="button" class="btn btn-primary mx-2" id="delete">Удалить</button>
+				<button type="button" class="btn btn-primary mx-2" id="done">Выдан</button>
+			</p>
+		</div>
+		<div class="text-center">
+				<table class="table" id="table">
+				<thead>
+					<tr>
+						<th>
+							Номер
+						</th>
+						<th>
+							Дата оплаты
+						</th>
+						<th>
+							Сумма
+						</th>
+						<th>
+							Статус
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					@foreach (var item in Model)
+					{
+						<tr>
+							<td>
+								@Html.DisplayFor(modelItem => item.Id)
+							</td>
+							<td>
+								@Html.DisplayFor(modelItem => item.DatePurchase)
+							</td>
+							<td>
+								@Html.DisplayFor(modelItem => item.Sum)
+							</td>
+							<td>
+								@Html.DisplayFor(modelItem => item.PurchaseStatus)
+							</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
+	}
+</div>
+
+@section Styles
+	{
+	<style>
+		tr {
+			cursor: pointer;
+		}
+
+		.selected {
+			background-color: #0d6efd;
+			color: white;
+		}
+	</style>
+}
+
+@section Scripts
+	{
+	<script>
+		var table = document.getElementById("table");
+		var remove = document.getElementById("delete");
+		var done = document.getElementById("done");
+		var purchase = 0;
+		for (var i = 1; i < table.rows.length; i++) {
+			table.rows[i].onclick = function () {
+				if (typeof index !== "undefined") {
+					table.rows[index].classList.toggle("selected");
+				}
+				index = this.rowIndex;
+				this.classList.toggle("selected");
+				purchase = parseInt(this.cells[0].innerText);
+				remove.addEventListener("click", () => {
+					console.log('try to delete purchase')
+					$.ajax(
+						{
+							url: `/Home/DeletePurchase`,
+							type: 'POST',
+							data: { purchaseId: purchase }
+						}
+					).done(() => window.location.href = '/Home/Purchases')
+				})
+				done.addEventListener("click", () => {
+					console.log('try to delete purchase')
+					$.ajax(
+						{
+							url: `/Home/UpdateStatusPurchase`,
+							type: 'POST',
+							data: { id: purchase, status: 1 }
+						}
+					).done(() => window.location.href = '/Home/Purchases')
+				})
+				update.addEventListener("click", () => {
+					console.log('try to update purchase')
+					window.location.href = '/Home/UpdatePurchase?purchaseId=' + purchase
+				})
+			};
+		}
+
+	</script>
+}

@@ -1,0 +1,168 @@
+﻿@using HardwareShopContracts.ViewModels
+
+@model List<OrderViewModel>
+
+@{
+    ViewData["Title"] = "Заказы";
+    Layout = "~/Views/Shared/_LayoutStorekeeper.cshtml";
+}
+
+<div class="text-center">
+	<h1 class="display-4">Заказы</h1>
+</div>
+
+<div class="text-center">
+	<p>
+		<a asp-action="CreateOrder" class="btn btn-primary mx-2">Создать заказ</a>
+		<button type="button" class="btn btn-primary mx-2" id="delete">Удалить заказ</button>
+		<button type="button" class="btn btn-primary mx-2" id="inwork">Выполняется</button>
+		<button type="button" class="btn btn-primary mx-2" id="ready">Готов</button>
+		<button type="button" class="btn btn-primary mx-2" id="done">Выдан</button>
+	</p>
+	<table class="table" id="table">
+		<thead>
+			<tr>
+				<th>
+					Номер
+				</th>
+				<th>
+					Товар
+				</th>
+				<th>
+					Количество
+				</th>
+				<th>
+					Сумма
+				</th>
+				<th>
+					Статус
+				</th>
+				<th>
+					Дата создания
+				</th>
+				<th>
+					Дата выполнения
+				</th>
+			</tr>
+		</thead>
+		<tbody>
+			@foreach (var item in Model)
+			{
+				<tr>
+					<td>
+						@Html.DisplayFor(modelItem => item.Id)
+					</td>
+					<td>
+						@Html.DisplayFor(modelItem => item.GoodName)
+					</td>
+					<td>
+						@Html.DisplayFor(modelItem => item.Count)
+					</td>
+					<td>
+						@Html.DisplayFor(modelItem => item.Sum)
+					</td>
+					<td>
+						@Html.DisplayFor(modelItem => item.Status)
+					</td>
+					<td>
+						@Html.DisplayFor(modelItem => item.DateCreate)
+					</td>
+					<td>
+						@Html.DisplayFor(modelItem => item.DateImplement)
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+</div>
+
+@section Styles
+{
+	<style>
+		tr{cursor: pointer;}
+		.selected{background-color: #0d6efd; color: white;}
+	</style>
+}
+
+@section Scripts 
+{
+	<script>
+	// get selected row
+	// display selected row data in text input
+
+	var table = document.getElementById("table");
+	var remove = document.getElementById("delete");
+	var inwork = document.getElementById("inwork");
+	var ready = document.getElementById("ready");
+	var done = document.getElementById("done");
+	for(var i = 1; i < table.rows.length; i++)
+	{
+		table.rows[i].onclick = function()
+		{
+			// remove the background from the previous selected row
+			if(typeof index !== "undefined") {
+				table.rows[index].classList.toggle("selected");
+			}
+			// get the selected row index
+			index = this.rowIndex;
+			// add class selected to the row
+			this.classList.toggle("selected");
+
+			var order = parseInt(this.cells[0].innerText)
+			remove.addEventListener("click", () => {
+				console.log('try to delete order')
+				$.ajax(
+					{
+						url: `/Storekeeper/DeleteOrder`,
+						type: 'POST',
+						data: { id: order }
+					}
+				).done(() => window.location.href='/Storekeeper/Orders')
+				.fail(function(xhr, textStatus, errorThrown) {
+					alert(xhr.responseText);
+				})
+			})
+			inwork.addEventListener("click", () => {
+				console.log('try to update order status')
+				$.ajax(
+					{
+						url: `/Storekeeper/UpdateOrder`,
+						type: 'POST',
+						data: { id : order, status : 1 }
+					}
+				).done((result) => window.location.href='/Storekeeper/Orders')
+				.fail(function(xhr, textStatus, errorThrown) {
+					alert(xhr.responseText);
+				})
+			})
+			ready.addEventListener("click", () => {
+				console.log('try to update order status')
+				$.ajax(
+					{
+						url: `/Storekeeper/UpdateOrder`,
+						type: 'POST',
+						data: { id : order, status : 2 }
+					}
+				).done(() => window.location.href='/Storekeeper/Orders')
+				.fail(function(xhr, textStatus, errorThrown) {
+					alert(xhr.responseText);
+				})
+			})
+			done.addEventListener("click", () => {
+				console.log('try to update order status')
+				$.ajax(
+					{
+						url: `/Storekeeper/UpdateOrder`,
+						type: 'POST',
+						data: { id : order, status : 3 }
+					}
+				).done(() => window.location.href='/Storekeeper/Orders')
+				.fail(function(xhr, textStatus, errorThrown) {
+					alert(xhr.responseText);
+				})
+			})
+		};
+	}
+	
+	</script>
+}

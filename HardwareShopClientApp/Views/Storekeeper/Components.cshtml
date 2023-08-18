@@ -1,0 +1,127 @@
+﻿@using HardwareShopContracts.ViewModels
+
+@model List<ComponentViewModel>
+
+@{
+    ViewData["Title"] = "Комплектующие";
+	Layout = "~/Views/Shared/_LayoutStorekeeper.cshtml";
+}
+
+<div class="text-center">
+	<h1 class="display-4">Комплектующие</h1>
+</div>
+
+
+<div class="text-center">
+	@{
+		<p>
+			<a asp-action="CreateComponent" class="btn btn-primary mx-2">Создать комплектующее</a>
+		</p>
+		<table class="table">
+			<thead>
+				<tr>
+					<th>
+						Название
+					</th>
+					<th>
+						Цена
+					</th>
+					<th>
+						Дата приобретения
+					</th>
+					<th>
+						Действия
+					</th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach (var item in Model)
+				{
+					<tr>
+						<td>
+							@Html.DisplayFor(modelItem => item.ComponentName)
+						</td>
+						<td>
+							@Html.DisplayFor(modelItem => item.Cost)
+						</td>
+						<td>
+							@Html.DisplayFor(modelItem => item.DateCreate)
+						</td>
+						<td>
+							<div>
+								<a asp-controller="Storekeeper"
+									asp-action="LinkBuilds"
+									asp-route-componentid="@item.Id"
+									class="btn btn-success">
+									<i class="fa fa-paperclip fa-rotate-90" aria-hidden="true"></i>
+								</a>
+								<button onclick="getComponent(@item.Id)" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateModal">
+									<i class="fa fa-pencil" aria-hidden="true"></i>
+								</button>
+								<button onclick="deleteComponent(@item.Id)" type="button" class="btn btn-danger">
+									<i class="fa fa-trash" aria-hidden="true"></i>
+								</button>
+							</div>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+</div>
+
+<form method="post" asp-controller="Storekeeper" asp-action="UpdateComponent">
+	<div class="modal fade" id="updateModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="exampleModalLabel">Комплектующая</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+				</div>
+				<div class="modal-body">
+					<div class="col">
+						<label class="form-label">Название</label>
+						<input type="text" class="form-control" name="name" id="name" required>
+					</div>
+					<div class="col">
+						<label class="form-label">Стоимость</label>
+						<input type="number" step="0.01" class="form-control" name="cost" id="cost" min="0.01" required>
+					</div>
+				</div>
+				<input type="hidden" id="component" name="component" />
+				<div class="modal-footer">
+					<input type="submit" class="btn btn-primary" value="Сохранить">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</form>
+
+@section Scripts
+{
+	<script>
+		function getComponent(componentId) {
+			$.ajax({
+				method: "GET",
+				url: "/Storekeeper/GetComponent",
+				data: { Id: componentId },
+				success: function (result) {
+					if (result != null)
+					{
+						$('#name').val(result.componentName);
+						$('#cost').val(result.cost);
+						$('#component').val(result.id);
+					}
+				}
+			});
+		}
+		function deleteComponent(componentId) {
+			$.ajax({
+				method: "POST",
+				url: "/Storekeeper/DeleteComponent",
+				data: { component: componentId }
+			}).done(() => window.location.href = "/Storekeeper/Components");
+		}
+	</script>
+}

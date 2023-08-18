@@ -1,0 +1,183 @@
+﻿@using HardwareShopContracts.ViewModels
+@{
+    ViewData["Title"] = "Привязка сборок";
+    Layout = "~/Views/Shared/_LayoutStorekeeper.cshtml";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Привязка сборок</h1>
+</div>
+
+<div class="d-flex flex-column align-items-center">
+	<div class="col-sm-3">
+		<div class="d-flex justify-content-center">
+			<button type="button" class="btn btn-primary mx-2 mt-3" data-bs-toggle="modal" data-bs-target="#exampleModal">Привязать</button>
+		</div>
+	</div>
+	<h1 class="display-6">Привязанные сборки</h1>
+	<table class="table table-hover">
+		<thead>
+			<tr>
+				<th scope="col">Сборка</th>
+				<th scope="col">Количество</th>
+				<th scope="col">Действие</th>
+			</tr>
+		</thead>
+		<tbody id="result">
+		</tbody>
+	</table>
+	<div class="col-sm-2 d-flex justify-content-evenly align-items-baseline">
+		<button type="button" class="btn btn-primary mt-3 px-4" id="linkbuilds">Сохранить</button>
+	</div>
+</div>
+
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="exampleModalLabel">Привязка сборки</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+			</div>
+			<div class="modal-body">
+				<label class="form-label">Сборка</label>
+				<select id="build" name="build" class="form-control" asp-items="@(new SelectList(@ViewBag.Builds, "Id", "BuildName"))" required></select>
+				<table class="table table-hover">
+				<thead><tr><th scope="col">Комментарии</th></tr></thead>
+				<tbody id="comments"></tbody>
+				<label class="form-label">Количество</label>
+				<input type="number" class="form-control" name="count" id="count" min="1" value="1" required>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+				<button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="savebuild">Сохранить</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+@section Scripts
+{
+	<script>
+		const componentid = @Model;
+		let component;
+		let list = [];
+		const submitBuildBtn = document.getElementById("savebuild");
+		const saveBtn = document.getElementById("linkbuilds");
+		const countElem = document.getElementById("count");
+		const resultTable = document.getElementById("result");
+		const selectBuilds = document.getElementById("build");
+		const comments = document.getElementById("comments");
+
+		selectBuilds.addEventListener('change', function() { getCommentsOnBuild() });
+
+		function getCommentsOnBuild() {
+			$.ajax({
+				method: "GET",
+				url: `/Storekeeper/GetCommentsOnBuild`,
+				data: { buildId: selectBuilds.value },
+				success: function (result) {
+					reloadCommentsTable(result)
+				}
+			});
+		}
+
+		submitBuildBtn.addEventListener("click", () => {
+			console.log('try to add build')
+			var count = $('#count').val();
+			var build = $('#build').val();
+			$.ajax({
+				method: "GET",
+				url: `/Storekeeper/GetBuild`,
+				data: { buildId: build },
+				success: function (result) {
+					let flag = false
+					if (list.length > 0) {
+						list.forEach((elem) => {
+							if (elem.build.id === parseInt(result.id)) {
+								console.log('build already added')
+								flag = true
+							}
+						})
+					}
+					if (!flag) list.push({ build: result, count: count })
+					reloadTable()
+					countElem.value = '1'
+				}
+			});
+		})
+
+		saveBtn.addEventListener("click", () => {
+			console.log('try to link builds')
+			let builds = []
+			let counts = []
+			list.forEach((x) => { 
+				builds.push(x.build); 
+				counts.push(parseInt(x.count)) 
+			})
+			$.ajax(
+				{
+					url: `/Storekeeper/LinkBuilds`,
+					type: 'POST',
+					contentType: 'application/json',
+					data: JSON.stringify({ "Id": componentid, "ComponentName": component.componentName, 
+					"Cost": component.cost, "ComponentBuildsBuilds": builds, "ComponentBuildsCounts": counts })
+				}
+			).done(() => window.location.href = '/Storekeeper/Components')
+		})
+
+		function reloadTable() {
+			resultTable.innerHTML = ''
+			let count = 0;
+			list.forEach((elem) => {
+				resultTable.innerHTML += `<tr><td>${elem.build.buildName}</td><td>${elem.count}</td><td> \
+					<div> \
+						<button onclick="deleteBuild(${count})" type="button" class="btn btn-danger"> \
+							<i class="fa fa-trash" aria-hidden="true"></i> \
+						</button> \
+						</div><td/></tr>`
+				count++;
+			})
+		}
+
+		function reloadCommentsTable(result) {
+			comments.innerHTML = ''
+			result.forEach((elem) => {
+				comments.innerHTML += `<tr><td>${elem.text}</td></tr>`
+			})
+		}
+
+		function deleteBuild(id) {
+			list = list.filter(value => value.build.buildName != resultTable.rows[id].cells[0].innerText)
+			reloadTable()
+		}
+
+		function getComponentBuilds() {
+			if (componentid) {
+				$.ajax({
+					method: "GET",
+					url: "/Storekeeper/GetComponent",
+					data: { Id: componentid },
+					success: function (result) {
+						component = result
+					}
+				});
+				$.ajax({
+					method: "GET",
+					url: "/Storekeeper/GetComponentBuilds",
+					data: { componentid: componentid },
+					success: function (result) {
+						if (result) {
+							result.forEach(elem => {
+								list.push({ build: elem.item1, count: elem.item2 })
+							})
+							reloadTable()
+						}
+					}
+				});
+			};
+		}
+		getComponentBuilds();
+		getCommentsOnBuild();
+
+	</script>
+}

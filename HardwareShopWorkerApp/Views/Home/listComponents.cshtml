@@ -1,0 +1,153 @@
+﻿@using HardwareShopContracts.ViewModels
+@{
+    ViewData["Title"] = "List components";
+	Layout = "~/Views/Shared/_LayoutWorker.cshtml";
+}
+
+<div class="text-center">
+	<h1 class="display-4">Получение списка покупок</h1>
+</div>
+
+<div class="d-flex flex-column align-items-center">
+	<h1 class="display-6">Выбранные покупки</h1>
+	<div class="d-flex justify-content-center">
+		<button type="button" class="btn btn-primary mx-2 mt-3" data-bs-toggle="modal" data-bs-target="#exampleModal">Добавить покупку</button>
+	</div>
+	<table class="table">
+		<thead>
+			<tr>
+				<th scope="col">Покупка</th>
+				<th scope="col">Действия</th>
+			</tr>
+		</thead>
+		<tbody id="result">
+		</tbody>
+	</table>
+	<div class="col d-flex justify-content-evenly align-items-baseline">
+		<button type="button" class="btn btn-primary   m-2" id="savedoc">Сохранить в doc-формате</button>
+		<button type="button" class="btn btn-primary   m-2" id="saveexcel">Сохранить в xls-формате</button>
+	</div>
+</div>
+
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="exampleModalLabel">Покупка</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+			</div>
+			<div class="modal-body">
+				<label class="form-label">Покупка</label>
+				<select id="purchase" name="purchase" class="form-control" asp-items="@(new SelectList(@ViewBag.Purchases, "Id", "Id"))"></select>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+				<button type="button" class="btn btn-primary" data-bs-dismiss="modal" id="savepurchase">Сохранить</button>
+			</div>
+		</div>
+	</div>
+</div>
+@section Scripts
+{
+	<script>
+		let list = [];
+		const submitPurchaseBtn = document.getElementById("savepurchase");
+		const resultTable = document.getElementById("result");
+		const saveDocBtn = document.getElementById("savedoc");
+		const saveExcelBtn = document.getElementById("saveexcel");
+
+		submitPurchaseBtn.addEventListener("click", () => {
+			console.log('try to add purchase')
+			var purchase = $('#purchase').val();
+			if (purchase)
+				$.ajax({
+					method: "GET",
+					url: `/Home/GetPurchase`,
+					data: { Id: purchase },
+					success: function (result) {
+						let flag = false
+						if (list.length > 0) {
+							list.forEach((elem) => {
+									if (elem.id === parseInt(result.id)) {
+										console.log('purchase already added')
+									flag = true
+								}
+							})
+						}
+						if (!flag) list.push(result)
+						reloadTable()
+					}
+				}).fail(function(xhr, textStatus, errorThrown) {
+					alert(xhr.responseText);
+				})
+		})
+
+		saveDocBtn.addEventListener("click", async () => {
+			send('docx')
+		})
+
+		saveExcelBtn.addEventListener("click", async () => {
+			send('xlsx')
+		})
+
+		function send(format) {
+			console.log(`try to save in ${format} format`)
+			if (list.length == 0) {
+				alert('operation failed. purchases or filename are empty')
+				return
+			}
+			$.ajax({
+					url: `/Home/ListComponents?format=${format}`,
+					type: 'POST',
+					contentType: 'application/json',
+					data: JSON.stringify({ "Purchases" : list })
+				}).done((file) => {
+					let byteArray = new Uint8Array(file);
+					saveFile(byteArray, format);
+				})
+				.fail(function(xhr, textStatus, errorThrown) {
+					alert(xhr.responseText);
+				})
+		}
+
+		async function saveFile(bytes, format) {
+			if (window.showSaveFilePicker) {
+				const opts = {
+					suggestedName: `listcomponents.${format}`,
+					types: [{
+						description: `${format} file`,
+						accept: 
+						{ 
+							[`text/${format}`]: [`.${format}`]
+						},
+					}],
+				};
+				const handle = await showSaveFilePicker(opts);
+				const writable = await handle.createWritable();
+				await writable.write(bytes);
+				writable.close();
+				alert('done')
+			}
+		}
+
+		function reloadTable() {
+			resultTable.innerHTML = ''
+			let count = 0;
+			list.forEach((elem) => {
+				resultTable.innerHTML += `<tr><td>${elem.id}</td><td> \
+					<div> \
+						<button onclick="deletePurchase(${count})" type="button" class="btn btn-danger"> \
+							<i class="fa fa-trash" aria-hidden="true"></i> \
+						</button> \
+						</div></td></tr>`
+				count++;
+			})
+		}
+
+		function deletePurchase(id) {
+			list = list.filter(value => value.id != resultTable.rows[id].cells[0].innerText)
+			reloadTable()
+		}
+
+	</script>
+}
